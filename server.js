@@ -2,12 +2,11 @@ const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const UrlModel = require('./models/UrlModel');
-const url = require('url');
 const base58 = require('./base58');
-
+const reg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/;
 mongoose.Promise = global.Promise;
 
-mongoose.connect('mongodb://leo:123456789@ds133077.mlab.com:33077/fccdb',
+mongoose.connect(process.env.ConnectionString,
 {useMongoClient:true});
 
 
@@ -18,7 +17,7 @@ app.get('/',(req , res )=>{
 });
 app.get('/new/:url*',(req , res )=>{
   let url = req.params['url'] + req.params[0];
-  if(url.match(/http+s?\:\/{2}\w+\.{1}\w+\b/)){
+  if(url.match(reg)){
          UrlModel.count({}).then(function(count){
            const newURL = {
              origin:url,
@@ -28,7 +27,7 @@ app.get('/new/:url*',(req , res )=>{
            UrlModel.create(newURL).then(function(){
              res.status(200).send({
                origin:url,
-               shorten:req.get('host')+'/'+base58.encode(19999+count)
+               shorten: req.protocol + '://' + req.get('host') +'/'+base58.encode(19999+count)
              });
            }).catch(function(err){console.log(err)});
       }).catch(function(err){console.log(err)});
